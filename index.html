@@ -1,0 +1,1478 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#E7D5C0" />
+  <title>来杯奶茶摇一摇</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@700&display=swap" rel="stylesheet" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect fill='%23F4E6D4' width='32' height='32' rx='8'/%3E%3Cpath d='M10 8h12l-1.4 14.2a4 4 0 0 1-4 3.6h-1.2a4 4 0 0 1-4-3.6L10 8z' fill='%23C68645'/%3E%3Cpath d='M11 12h10l-.3 3H11.3L11 12z' fill='%23F6D3A6'/%3E%3C/svg%3E" />
+  <style>
+    :root {
+      --ink: #2c1c14;
+      --muted: #7a5b48;
+      --line: rgba(58, 36, 28, 0.16);
+      --paper: #fbf6ee;
+      --desk: #e7d5c0;
+      --bean: #3a241c;
+      --seal: #c4502a;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body { height: 100%; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--desk);
+      font-family: "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei", "Droid Sans Fallback", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    button, input { font-family: inherit; }
+
+    .stage {
+      width: min(440px, 100%);
+      min-height: 100dvh;
+      margin: 0 auto;
+      padding: 22px 20px max(16px, env(safe-area-inset-bottom));
+      background: var(--paper);
+      display: flex;
+      flex-direction: column;
+    }
+
+    @media (min-width: 760px) {
+      body {
+        display: grid;
+        place-items: center;
+        min-height: 100vh;
+      }
+
+      .stage {
+        min-height: 0;
+        height: min(920px, calc(100vh - 40px));
+        border: 1px solid var(--line);
+        border-radius: 28px;
+        overflow: auto;
+      }
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .kicker-row {
+      display: flex;
+      gap: 10px;
+      align-items: baseline;
+    }
+
+    .kicker, .cup-no, .label, .meter-row {
+      margin: 0;
+      font-size: 12px;
+      letter-spacing: 0.16em;
+      color: var(--muted);
+    }
+
+    .cup-no { color: var(--seal); letter-spacing: 0.08em; }
+
+    h1 {
+      margin: 2px 0 6px;
+      font-family: "Noto Serif SC", "Songti SC", "Noto Sans SC", "WenQuanYi Micro Hei", serif;
+      font-size: 34px;
+      line-height: 1.15;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+    }
+
+    .status {
+      margin: 0;
+      min-height: 1.45em;
+      font-size: 14px;
+      color: #6e5142;
+    }
+
+    .tools {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding-top: 2px;
+    }
+
+    #sound {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      padding: 4px;
+      cursor: pointer;
+    }
+
+    .seal {
+      width: 46px;
+      height: 46px;
+      border: 1.5px solid var(--seal);
+      color: var(--seal);
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-family: "Noto Serif SC", "Songti SC", "WenQuanYi Micro Hei", serif;
+      font-size: 18px;
+      transform: rotate(-12deg);
+    }
+
+    .cup-wrap {
+      flex: 1;
+      min-height: 280px;
+      margin: 4px 0 2px;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      touch-action: none;
+      cursor: grab;
+      user-select: none;
+    }
+
+    canvas:active { cursor: grabbing; }
+
+    .ticket {
+      margin: 0 0 8px;
+      text-align: center;
+      font-size: 13px;
+      letter-spacing: 0.04em;
+      color: #5c4034;
+    }
+
+    .meter-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+
+    .meter {
+      height: 6px;
+      border-radius: 99px;
+      background: rgba(58, 36, 28, 0.08);
+      overflow: hidden;
+    }
+
+    .meter > span {
+      display: block;
+      height: 100%;
+      width: 0;
+      background: var(--seal);
+    }
+
+    .label { margin: 12px 0 6px; }
+
+    .flavors, .seg {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .seg button { flex: 1; min-width: 0; }
+
+    .flavors button, .seg button {
+      border: 1px solid var(--line);
+      background: transparent;
+      color: var(--bean);
+      border-radius: 999px;
+      padding: 7px 10px;
+      font-size: 13px;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+    }
+
+    .flavors button {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding-left: 8px;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex: none;
+    }
+
+    .flavors button[aria-pressed="true"],
+    .seg button[aria-pressed="true"] {
+      background: var(--bean);
+      color: var(--paper);
+      border-color: var(--bean);
+    }
+
+    .actions {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    #shake {
+      width: 100%;
+      height: 54px;
+      border: 0;
+      border-radius: 999px;
+      background: var(--bean);
+      color: #fbf6ee;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0.28em;
+      text-indent: 0.28em;
+      cursor: pointer;
+    }
+
+    #shake:active { transform: scale(0.985); }
+
+    #new-cup {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      font-size: 13px;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      cursor: pointer;
+      padding: 4px;
+    }
+
+    .hint {
+      margin: 0;
+      font-size: 12px;
+      color: #a08070;
+    }
+
+    button:focus-visible, canvas:focus-visible {
+      outline: 2px solid var(--seal);
+      outline-offset: 2px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      #shake:active { transform: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="stage">
+    <header>
+      <div>
+        <div class="kicker-row">
+          <p class="kicker">手摇铺</p>
+          <p class="cup-no" id="cup-no">第 1 杯</p>
+        </div>
+        <h1>来杯奶茶</h1>
+        <p class="status" id="status" aria-live="polite">按住杯子甩一甩，或点下面摇一摇。</p>
+      </div>
+      <div class="tools">
+        <button id="sound" type="button" aria-pressed="true">声音开</button>
+        <div class="seal" aria-hidden="true">摇</div>
+      </div>
+    </header>
+
+    <div class="cup-wrap">
+      <canvas id="cup" width="400" height="480" aria-label="一杯可以摇晃的奶茶"></canvas>
+    </div>
+
+    <p class="ticket" id="ticket">大杯 · 珍珠奶茶 · 半糖 · 少冰</p>
+    <div class="meter-row">
+      <span id="shake-count">摇匀度</span>
+      <span id="mix-num">0%</span>
+    </div>
+    <div class="meter" id="meter" role="meter" aria-label="摇匀度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+      <span id="meter-fill"></span>
+    </div>
+
+    <p class="label">口味</p>
+    <div class="flavors" role="group" aria-label="口味">
+      <button type="button" data-flavor="0" aria-pressed="true"><span class="dot" style="background:#d0924c"></span>珍珠奶茶</button>
+      <button type="button" data-flavor="1" aria-pressed="false"><span class="dot" style="background:#b48bc8"></span>芋泥波波</button>
+      <button type="button" data-flavor="2" aria-pressed="false"><span class="dot" style="background:#86a85a"></span>抹茶牛乳</button>
+      <button type="button" data-flavor="3" aria-pressed="false"><span class="dot" style="background:#f0b445"></span>杨枝甘露</button>
+      <button type="button" data-flavor="4" aria-pressed="false"><span class="dot" style="background:#8a5a32"></span>黑糖脏脏</button>
+      <button type="button" data-flavor="5" aria-pressed="false"><span class="dot" style="background:#f08aa0"></span>草莓奶盖</button>
+    </div>
+
+    <p class="label">甜度</p>
+    <div class="seg" role="group" aria-label="甜度">
+      <button type="button" data-sugar="0" aria-pressed="false">无糖</button>
+      <button type="button" data-sugar="1" aria-pressed="false">三分</button>
+      <button type="button" data-sugar="2" aria-pressed="true">半糖</button>
+      <button type="button" data-sugar="3" aria-pressed="false">七分</button>
+      <button type="button" data-sugar="4" aria-pressed="false">全糖</button>
+    </div>
+
+    <p class="label">冰量</p>
+    <div class="seg" role="group" aria-label="冰量">
+      <button type="button" data-ice="0" aria-pressed="false">去冰</button>
+      <button type="button" data-ice="1" aria-pressed="true">少冰</button>
+      <button type="button" data-ice="2" aria-pressed="false">正常冰</button>
+    </div>
+
+    <div class="actions">
+      <button id="shake" type="button">摇一摇</button>
+      <button id="new-cup" type="button">再来一杯</button>
+      <p class="hint" id="hint">按住杯子左右甩。</p>
+    </div>
+  </main>
+
+  <script>
+    "use strict";
+
+    const FLAVORS = [
+      {
+        name: "珍珠奶茶",
+        tea: "#5C2C12",
+        milk: "#F6D3A6",
+        mixed: "#D0924C",
+        foam: false,
+        lid: true,
+        streaks: false,
+        groups: [
+          { kind: "pearl", n: 12, r: 8.5, color: "#2A1A12", highlight: "#7A5A40", float: 0.08 }
+        ]
+      },
+      {
+        name: "芋泥波波",
+        tea: "#5A3874",
+        milk: "#EDD9F6",
+        mixed: "#B48BC8",
+        foam: false,
+        lid: true,
+        streaks: false,
+        groups: [
+          { kind: "pearl", n: 8, r: 8, color: "#4A2C5C", highlight: "#8A6A9A", float: 0.08 },
+          { kind: "chunk", n: 4, r: 15, color: "#C9A0D8", highlight: "#F0E2F6", float: 0.35 }
+        ]
+      },
+      {
+        name: "抹茶牛乳",
+        tea: "#2C552C",
+        milk: "#E4F0C6",
+        mixed: "#86A85A",
+        foam: true,
+        foamColor: "#F6F0D2",
+        lid: false,
+        streaks: false,
+        groups: [
+          { kind: "chunk", n: 7, r: 8, color: "#3E6A38", highlight: "#A8C878", float: 0.45 }
+        ]
+      },
+      {
+        name: "杨枝甘露",
+        tea: "#E08E22",
+        milk: "#FFE4AE",
+        mixed: "#F0B445",
+        foam: false,
+        lid: true,
+        streaks: false,
+        groups: [
+          { kind: "sago", n: 14, r: 4.5, color: "#FFF6E4", highlight: "#FFFFFF", float: 0.55 },
+          { kind: "chunk", n: 3, r: 12, color: "#F29A2E", highlight: "#FFE0A8", float: 0.7 },
+          { kind: "chunk", n: 3, r: 10, color: "#F4B7C4", highlight: "#FFE4EA", float: 0.8 }
+        ]
+      },
+      {
+        name: "黑糖脏脏",
+        tea: "#5A3016",
+        milk: "#FFF8F1",
+        mixed: "#E4CBB4",
+        foam: false,
+        lid: true,
+        streaks: true,
+        groups: [
+          { kind: "pearl", n: 11, r: 8.5, color: "#24160F", highlight: "#6A4834", float: 0.1 }
+        ]
+      },
+      {
+        name: "草莓奶盖",
+        tea: "#D24B66",
+        milk: "#FFD5DE",
+        mixed: "#F08AA0",
+        foam: true,
+        foamColor: "#FFD98A",
+        lid: false,
+        streaks: false,
+        groups: [
+          { kind: "chunk", n: 8, r: 7, color: "#E25B78", highlight: "#FFD0DA", float: 0.6 }
+        ]
+      }
+    ];
+
+    const SUGAR = ["无糖", "三分", "半糖", "七分", "全糖"];
+    const ICE = ["去冰", "少冰", "正常冰"];
+    const SANS = '"Noto Sans SC", "PingFang SC", "WenQuanYi Micro Hei", "Droid Sans Fallback", sans-serif';
+
+    const canvas = document.getElementById("cup");
+    const ctx = canvas.getContext("2d");
+    const statusEl = document.getElementById("status");
+    const ticketEl = document.getElementById("ticket");
+    const mixNumEl = document.getElementById("mix-num");
+    const shakeCountEl = document.getElementById("shake-count");
+    const meterEl = document.getElementById("meter");
+    const meterFill = document.getElementById("meter-fill");
+    const cupNoEl = document.getElementById("cup-no");
+    const soundBtn = document.getElementById("sound");
+    const hintEl = document.getElementById("hint");
+
+    const state = {
+      flavor: 0,
+      sugar: 2,
+      ice: 1,
+      mix: 0,
+      energy: 0,
+      tilt: 0,
+      phase: 0,
+      shakes: 0,
+      cups: 1,
+      done: false,
+      audioOn: true,
+      cssW: 400,
+      cssH: 480,
+      dpr: 1,
+      particles: [],
+      streaks: [],
+      splashes: [],
+      bubbles: [],
+      drops: [],
+      shakeUntil: 0,
+      lastCount: 0,
+      lastKick: 0
+    };
+
+    let dragTilt = null;
+    let dragging = false;
+    let lastX = 0;
+    let lastY = 0;
+    let lastT = 0;
+    let audioCtx = null;
+    let lastFrame = performance.now();
+
+    function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+
+    function reduced() {
+      return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    }
+
+    function flavor() { return FLAVORS[state.flavor]; }
+
+    function parseColor(input) {
+      if (input && typeof input === "object") return input;
+      const text = String(input).trim();
+      if (text.charAt(0) === "#") {
+        const n = parseInt(text.slice(1), 16);
+        return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+      }
+      const parts = text.match(/\d+/g) || ["0", "0", "0"];
+      return { r: Number(parts[0]), g: Number(parts[1]), b: Number(parts[2]) };
+    }
+
+    function mixHex(a, b, t) {
+      const pa = parseColor(a);
+      const pb = parseColor(b);
+      const u = clamp(t, 0, 1);
+      return "rgb(" +
+        Math.round(pa.r + (pb.r - pa.r) * u) + ", " +
+        Math.round(pa.g + (pb.g - pa.g) * u) + ", " +
+        Math.round(pa.b + (pb.b - pa.b) * u) + ")";
+    }
+
+    function palette() {
+      const f = flavor();
+      const sweet = state.sugar / 4;
+      const ice = state.ice / 2;
+      let tea = mixHex(f.milk, f.tea, 0.55 + sweet * 0.45);
+      let milk = f.milk;
+      let mixed = mixHex(f.milk, f.mixed, 0.4 + sweet * 0.6);
+      if (ice > 0) {
+        mixed = mixHex(mixed, "#F4FAFF", ice * 0.16);
+        milk = mixHex(milk, "#F4FAFF", ice * 0.1);
+        tea = mixHex(tea, "#F4FAFF", ice * 0.06);
+      }
+      return { tea: tea, milk: milk, mixed: mixed, foam: f.foamColor || "#FFF7EC" };
+    }
+
+    function metrics() {
+      const w = state.cssW || 360;
+      const h = state.cssH || 420;
+      const cx = w / 2;
+      const bottom = h * 0.8;
+      const cupH = Math.min(h * 0.56, w * 0.92);
+      const top = bottom - cupH;
+      const topW = Math.min(w * 0.7, cupH * 0.86);
+      const botW = topW * 0.7;
+      return { w: w, h: h, cx: cx, top: top, bottom: bottom, topW: topW, botW: botW, cupH: cupH };
+    }
+
+    function liquidTop(m) {
+      const fill = flavor().foam ? 0.62 : 0.82;
+      const innerTop = m.top + 16;
+      const innerBot = m.bottom - 14;
+      return innerBot - (innerBot - innerTop) * fill;
+    }
+
+    function traceCup(ctx2, m, inset) {
+      const top = m.top + inset * 0.45;
+      const bot = m.bottom - inset * 0.3;
+      const topW = m.topW - inset * 2.15;
+      const botW = m.botW - inset * 1.55;
+      const cx = m.cx;
+      const r = Math.max(10, 20 - inset * 0.25);
+      ctx2.beginPath();
+      ctx2.moveTo(cx - topW / 2 + 14, top);
+      ctx2.lineTo(cx + topW / 2 - 14, top);
+      ctx2.quadraticCurveTo(cx + topW / 2, top, cx + topW / 2 - 2, top + 18);
+      ctx2.lineTo(cx + botW / 2 - 1, bot - r);
+      ctx2.quadraticCurveTo(cx + botW / 2 + 2, bot, cx + botW / 2 - r, bot);
+      ctx2.lineTo(cx - botW / 2 + r, bot);
+      ctx2.quadraticCurveTo(cx - botW / 2 - 2, bot, cx - botW / 2 + 1, bot - r);
+      ctx2.lineTo(cx - topW / 2 + 2, top + 18);
+      ctx2.quadraticCurveTo(cx - topW / 2, top, cx - topW / 2 + 14, top);
+      ctx2.closePath();
+    }
+
+    function innerHalf(m, y) {
+      const inset = 9;
+      const top = m.top + inset * 0.45;
+      const bot = m.bottom - inset * 0.3;
+      const topW = m.topW - inset * 2.15;
+      const botW = m.botW - inset * 1.55;
+      const t = clamp((y - top) / (bot - top || 1), 0, 1);
+      return topW / 2 + (botW / 2 - topW / 2) * t - 10;
+    }
+
+    function outerHalf(m, y) {
+      const t = clamp((y - m.top) / (m.bottom - m.top || 1), 0, 1);
+      return m.topW / 2 + (m.botW / 2 - m.topW / 2) * t;
+    }
+
+    function waveY(base, x, amp, m) {
+      const slope = reduced() ? 0 : -state.tilt * 0.85;
+      return base +
+        (x - m.cx) * slope +
+        Math.sin(x * 0.055 + state.phase) * amp +
+        Math.sin(x * 0.11 - state.phase * 1.4) * amp * 0.35;
+    }
+
+    function makeStreaks() {
+      const out = [];
+      for (let i = 0; i < 8; i++) {
+        out.push({
+          side: i < 5 ? -1 : 1,
+          t0: 0.16 + Math.random() * 0.2,
+          len: 0.26 + Math.random() * 0.42,
+          w: 2 + Math.random() * 2.4,
+          bend: (Math.random() - 0.4) * 8
+        });
+      }
+      return out;
+    }
+
+    function makeDrops() {
+      const drops = [];
+      for (let i = 0; i < 9; i++) {
+        drops.push({
+          t: 0.22 + Math.random() * 0.6,
+          side: Math.random() < 0.75 ? -1 : 1,
+          len: 6 + Math.random() * 9,
+          xoff: (Math.random() - 0.5) * 4
+        });
+      }
+      return drops;
+    }
+
+    function placeBottom(i, r, m) {
+      const cols = 4;
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const span = m.botW * 0.62;
+      return {
+        x: m.cx - span / 2 + (col + 0.5) * (span / cols) + (Math.random() - 0.5) * 3,
+        y: m.bottom - 22 - r - row * (r * 2 + 2)
+      };
+    }
+
+    function spawn() {
+      const m = metrics();
+      if (m.cupH < 40) return;
+      const list = [];
+      let n = 0;
+      flavor().groups.forEach(function (group) {
+        for (let i = 0; i < group.n; i++) {
+          const r = group.r + (Math.random() - 0.5) * 1.4;
+          let pos;
+          if (group.float > 0.65) {
+            pos = {
+              x: m.cx + (Math.random() - 0.5) * m.topW * 0.45,
+              y: liquidTop(m) + 28 + Math.random() * 50
+            };
+          } else if (group.float > 0.3) {
+            pos = {
+              x: m.cx + (Math.random() - 0.5) * m.botW * 0.5,
+              y: liquidTop(m) + 70 + Math.random() * 80
+            };
+          } else {
+            pos = placeBottom(n, r, m);
+            n += 1;
+          }
+          list.push({
+            kind: group.kind,
+            x: pos.x,
+            y: pos.y,
+            vx: 0,
+            vy: 0,
+            r: Math.max(3, r),
+            rot: Math.random() * Math.PI,
+            vr: 0,
+            color: group.color,
+            highlight: group.highlight,
+            float: group.float,
+            ice: false
+          });
+        }
+      });
+      state.particles = list;
+      addIce();
+    }
+
+    function addIce() {
+      state.particles = state.particles.filter(function (p) { return !p.ice; });
+      const count = [0, 3, 6][state.ice];
+      const m = metrics();
+      for (let i = 0; i < count; i++) {
+        state.particles.push({
+          kind: "ice",
+          ice: true,
+          x: m.cx + (i - (count - 1) / 2) * 22,
+          y: liquidTop(m) + 18 + (i % 2) * 16,
+          vx: 0,
+          vy: 0,
+          r: 13 + (i % 3),
+          rot: (i - 1) * 0.4,
+          vr: 0,
+          color: "#ffffff",
+          highlight: "#ffffff",
+          float: 1
+        });
+      }
+    }
+
+    function getAudio() {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      if (!audioCtx) audioCtx = new AC();
+      if (audioCtx.state === "suspended") audioCtx.resume();
+      return audioCtx;
+    }
+
+    function playSlosh(power) {
+      if (!state.audioOn || power < 0.2) return;
+      const ac = getAudio();
+      if (!ac) return;
+      const t = ac.currentTime;
+      const o = ac.createOscillator();
+      const filter = ac.createBiquadFilter();
+      const gain = ac.createGain();
+      o.type = "triangle";
+      o.frequency.setValueAtTime(80 + power * 50, t);
+      o.frequency.exponentialRampToValueAtTime(48, t + 0.18);
+      filter.type = "lowpass";
+      filter.frequency.value = 420;
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.exponentialRampToValueAtTime(0.09 * Math.min(1, power), t + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
+      o.connect(filter);
+      filter.connect(gain);
+      gain.connect(ac.destination);
+      o.start(t);
+      o.stop(t + 0.22);
+    }
+
+    function chime() {
+      if (!state.audioOn) return;
+      const ac = getAudio();
+      if (!ac) return;
+      const t = ac.currentTime;
+      [523.25, 659.25, 783.99].forEach(function (freq, i) {
+        const o = ac.createOscillator();
+        const gain = ac.createGain();
+        o.type = "sine";
+        o.frequency.value = freq;
+        const start = t + i * 0.06;
+        gain.gain.setValueAtTime(0.0001, start);
+        gain.gain.exponentialRampToValueAtTime(0.05, start + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.38);
+        o.connect(gain);
+        gain.connect(ac.destination);
+        o.start(start);
+        o.stop(start + 0.42);
+      });
+    }
+
+    function enableMotion() {
+      const motion = window.DeviceMotionEvent;
+      if (motion && typeof motion.requestPermission === "function") {
+        motion.requestPermission().catch(function () {});
+      }
+    }
+
+    function splash(power, m) {
+      if (power < 0.45) return;
+      const n = Math.round(3 + power * 5);
+      const y = liquidTop(m);
+      for (let i = 0; i < n; i++) {
+        state.splashes.push({
+          x: m.cx + (Math.random() - 0.5) * m.topW * 0.46,
+          y: y + 6,
+          vx: (Math.random() - 0.5) * 2.4 * power,
+          vy: -1.4 - Math.random() * 2.8 * power,
+          life: 1,
+          r: 1.6 + Math.random() * 2
+        });
+      }
+      if (state.splashes.length > 36) {
+        state.splashes.splice(0, state.splashes.length - 36);
+      }
+    }
+
+    function kick(power, count) {
+      power = clamp(power, 0, 1.25);
+      if (power <= 0) return;
+      const m = metrics();
+      state.energy = Math.min(1.8, state.energy + power);
+      const prev = state.mix;
+      state.mix = Math.min(1, state.mix + power * 0.15);
+      const now = performance.now();
+      if (count && now - state.lastCount > 150) {
+        state.shakes += 1;
+        state.lastCount = now;
+        if (navigator.vibrate && power > 0.8) navigator.vibrate(12);
+      }
+      state.particles.forEach(function (p) {
+        const heft = p.ice ? 0.5 : p.kind === "chunk" ? 0.72 : 1;
+        p.vx += (Math.random() - 0.5) * power * 7.2 * heft;
+        p.vy -= Math.random() * power * 8.8 * heft;
+        p.vr += (Math.random() - 0.5) * power * 0.35;
+      });
+      splash(power, m);
+      playSlosh(power);
+      if (prev < 1 && state.mix >= 1 && !state.done) {
+        state.done = true;
+        chime();
+      }
+    }
+
+    function statusText() {
+      const p = state.mix;
+      if (p >= 1) return "摇匀了。吸管插好，这一杯是你的。";
+      if (p >= 0.72) return "奶和茶缠在一起了，再甩一下。";
+      if (p >= 0.36) return "珍珠翻上来了，分层还在。";
+      if (state.shakes > 0) return "还没匀。按住杯子继续甩。";
+      return "按住杯子甩一甩，或点下面摇一摇。";
+    }
+
+    function renderUI() {
+      const text = statusText();
+      if (statusEl.textContent !== text) statusEl.textContent = text;
+      const pct = Math.round(state.mix * 100) + "%";
+      if (mixNumEl.textContent !== pct) {
+        mixNumEl.textContent = pct;
+        meterFill.style.width = pct;
+        meterEl.setAttribute("aria-valuenow", String(Math.round(state.mix * 100)));
+      }
+      const count = state.shakes ? "摇了 " + state.shakes + " 下" : "摇匀度";
+      if (shakeCountEl.textContent !== count) shakeCountEl.textContent = count;
+      const f = flavor();
+      const ticket = "大杯 · " + f.name + " · " + SUGAR[state.sugar] + " · " + ICE[state.ice];
+      if (ticketEl.textContent !== ticket) ticketEl.textContent = ticket;
+      const cup = "第 " + state.cups + " 杯";
+      if (cupNoEl.textContent !== cup) cupNoEl.textContent = cup;
+    }
+
+    function setPressed(selector, attr, value) {
+      document.querySelectorAll(selector).forEach(function (btn) {
+        const on = Number(btn.getAttribute(attr)) === value;
+        btn.setAttribute("aria-pressed", on ? "true" : "false");
+      });
+    }
+
+    function setFlavor(i) {
+      if (i === state.flavor || i < 0 || i >= FLAVORS.length) return;
+      if (state.shakes > 0) state.cups += 1;
+      state.flavor = i;
+      state.mix = 0;
+      state.energy = 0;
+      state.shakes = 0;
+      state.done = false;
+      state.splashes = [];
+      state.bubbles = [];
+      state.streaks = flavor().streaks ? makeStreaks() : [];
+      spawn();
+      setPressed("[data-flavor]", "data-flavor", i);
+      renderUI();
+    }
+
+    function newCup() {
+      state.cups += 1;
+      state.mix = 0;
+      state.energy = 0;
+      state.shakes = 0;
+      state.done = false;
+      state.splashes = [];
+      state.bubbles = [];
+      state.streaks = flavor().streaks ? makeStreaks() : [];
+      spawn();
+      renderUI();
+    }
+
+    function resize() {
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width < 2 || rect.height < 2) return;
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      const w = Math.round(rect.width * dpr);
+      const h = Math.round(rect.height * dpr);
+      state.cssW = rect.width;
+      state.cssH = rect.height;
+      state.dpr = dpr;
+      const sizeChanged = canvas.width !== w || canvas.height !== h;
+      if (sizeChanged) {
+        canvas.width = w;
+        canvas.height = h;
+      }
+      if (!state.particles.length || (sizeChanged && state.shakes === 0 && state.mix === 0)) spawn();
+    }
+
+    function step(dt) {
+      const s = clamp(dt / 16.67, 0.2, 2);
+      const m = metrics();
+      const now = performance.now();
+      const calm = reduced();
+      let target = 0;
+      if (dragTilt != null) target = dragTilt;
+      else if (now < state.shakeUntil) {
+        const k = (state.shakeUntil - now) / 680;
+        target = Math.sin(now * 0.045) * 0.26 * k;
+      } else if (state.energy > 0.05) {
+        target = Math.sin(now * 0.04) * state.energy * 0.1;
+      } else {
+        target = Math.sin(now * 0.0014) * 0.012;
+      }
+      if (calm) target *= 0.2;
+      const follow = 1 - Math.pow(0.8, s);
+      state.tilt += (target - state.tilt) * follow;
+      state.phase += (calm ? 0.015 : 0.05 + state.energy * 0.16) * s;
+      state.energy *= Math.pow(0.945, s);
+      if (state.energy < 0.001) state.energy = 0;
+
+      const prevMix = state.mix;
+      state.mix = Math.min(1, state.mix + state.energy * 0.0018 * s);
+      if (prevMix < 1 && state.mix >= 1 && !state.done) {
+        state.done = true;
+        chime();
+      }
+
+      const g = 0.28;
+      const surfBase = liquidTop(m);
+      const amp = (calm ? 1 : 2 + state.energy * 14);
+
+      state.particles.forEach(function (p) {
+        const buoy = (state.mix * 0.82 + p.float * (1 - state.mix) * 0.35) * g;
+        p.vx += Math.sin(state.tilt) * g * s;
+        p.vy += (Math.cos(state.tilt) * g - buoy) * s;
+        if (p.ice) {
+          const targetY = surfBase + 24 + (p.r % 7);
+          p.vy += (targetY - p.y) * 0.02 * s;
+        } else if (state.mix > 0.92 && state.energy < 0.2) {
+          p.vx += (Math.random() - 0.5) * 0.03 * s;
+          p.vy += (Math.random() - 0.5) * 0.03 * s;
+        }
+        p.vx *= Math.pow(0.985, s);
+        p.vy *= Math.pow(0.985, s);
+        p.x += p.vx * s;
+        p.y += p.vy * s;
+        p.rot += p.vr * s;
+        p.vr *= Math.pow(0.97, s);
+
+        const hw = innerHalf(m, p.y);
+        const left = m.cx - hw + p.r;
+        const right = m.cx + hw - p.r;
+        if (p.x < left) { p.x = left; p.vx = Math.abs(p.vx) * 0.42; }
+        if (p.x > right) { p.x = right; p.vx = -Math.abs(p.vx) * 0.42; }
+        const floor = m.bottom - 16;
+        if (p.y > floor - p.r) {
+          p.y = floor - p.r;
+          if (p.vy > 0) p.vy *= -0.28;
+          p.vx *= 0.84;
+        }
+        const ceil = p.ice ? m.top + 10 : waveY(surfBase, p.x, amp, m);
+        if (p.y < ceil + p.r) {
+          p.y = ceil + p.r;
+          if (p.vy < 0) p.vy *= -0.32;
+        }
+      });
+
+      for (let i = 0; i < state.particles.length; i++) {
+        for (let j = i + 1; j < state.particles.length; j++) {
+          const a = state.particles[i];
+          const b = state.particles[j];
+          let dx = b.x - a.x;
+          let dy = b.y - a.y;
+          const dist = Math.hypot(dx, dy) || 0.001;
+          const min = a.r + b.r - 1;
+          if (dist < min) {
+            const push = (min - dist) / 2;
+            dx /= dist;
+            dy /= dist;
+            a.x -= dx * push;
+            a.y -= dy * push;
+            b.x += dx * push;
+            b.y += dy * push;
+          }
+        }
+      }
+
+      if (state.energy > 0.35 && state.bubbles.length < 16 && Math.random() < 0.35 * s) {
+        state.bubbles.push({
+          x: m.cx + (Math.random() - 0.5) * m.botW * 0.4,
+          y: m.bottom - 30,
+          r: 1.2 + Math.random() * 2,
+          vy: -0.55 - Math.random() * 0.7,
+          life: 1
+        });
+      }
+      state.bubbles.forEach(function (b) {
+        b.y += b.vy * s;
+        b.life -= 0.012 * s;
+      });
+      const popLine = surfBase + 8;
+      state.bubbles = state.bubbles.filter(function (b) { return b.life > 0 && b.y > popLine; });
+
+      state.splashes.forEach(function (drop) {
+        drop.vy += 0.16 * s;
+        drop.x += drop.vx * s;
+        drop.y += drop.vy * s;
+        drop.life -= 0.025 * s;
+      });
+      state.splashes = state.splashes.filter(function (drop) { return drop.life > 0; });
+
+      if (!calm) {
+        state.drops.forEach(function (d) {
+          d.t += 0.00018 * s;
+          if (d.t > 0.9) d.t = 0.2;
+        });
+      }
+    }
+
+    function roundRect(ctx2, x, y, w, h, r) {
+      const radius = Math.min(r, w / 2, h / 2);
+      ctx2.beginPath();
+      ctx2.moveTo(x + radius, y);
+      ctx2.arcTo(x + w, y, x + w, y + h, radius);
+      ctx2.arcTo(x + w, y + h, x, y + h, radius);
+      ctx2.arcTo(x, y + h, x, y, radius);
+      ctx2.arcTo(x, y, x + w, y, radius);
+      ctx2.closePath();
+    }
+
+    function drawBit(p) {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      if (p.kind === "ice") {
+        ctx.fillStyle = "rgba(236, 246, 255, 0.78)";
+        ctx.strokeStyle = "rgba(255,255,255,0.95)";
+        ctx.lineWidth = 1.5;
+        roundRect(ctx, -p.r, -p.r * 0.78, p.r * 2, p.r * 1.55, 5);
+        ctx.fill();
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(-p.r * 0.35, -p.r * 0.15);
+        ctx.lineTo(p.r * 0.45, p.r * 0.4);
+        ctx.stroke();
+      } else if (p.kind === "chunk") {
+        const grad = ctx.createRadialGradient(-p.r * 0.3, -p.r * 0.3, 1, 0, 0, p.r);
+        grad.addColorStop(0, p.highlight);
+        grad.addColorStop(1, p.color);
+        ctx.fillStyle = grad;
+        roundRect(ctx, -p.r, -p.r * 0.7, p.r * 2, p.r * 1.4, p.r * 0.45);
+        ctx.fill();
+      } else {
+        if (p.kind === "sago") ctx.globalAlpha = 0.88;
+        const grad = ctx.createRadialGradient(-p.r * 0.35, -p.r * 0.4, p.r * 0.15, 0, 0, p.r);
+        grad.addColorStop(0, p.highlight);
+        grad.addColorStop(1, p.color);
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(0, 0, p.r, 0, Math.PI * 2);
+        ctx.fill();
+        if (p.kind === "sago") {
+          ctx.strokeStyle = "rgba(176, 132, 64, 0.35)";
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = "rgba(255,255,255,0.7)";
+        ctx.beginPath();
+        ctx.ellipse(-p.r * 0.28, -p.r * 0.32, p.r * 0.22, p.r * 0.13, -0.7, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function drawLiquid(m, colors) {
+      const surf = liquidTop(m);
+      const column = (m.bottom - 16) - surf;
+      const milkPortion = 0.5 - (state.sugar / 4) * 0.14;
+      const boundary = surf + column * milkPortion;
+      const amp = reduced() ? 1.2 : 2 + state.energy * 15;
+      const x0 = m.cx - m.topW;
+      const x1 = m.cx + m.topW;
+      const steps = 28;
+
+      function line(base, scale, dir, jump) {
+        for (let i = 0; i <= steps; i++) {
+          const k = dir < 0 ? steps - i : i;
+          const x = x0 + (x1 - x0) * (k / steps);
+          const y = waveY(base, x, amp * scale, m);
+          if (jump && i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+      }
+
+      ctx.beginPath();
+      line(surf, 1, 1, true);
+      ctx.lineTo(x1, m.bottom + 20);
+      ctx.lineTo(x0, m.bottom + 20);
+      ctx.closePath();
+      ctx.fillStyle = colors.tea;
+      ctx.fill();
+
+      ctx.save();
+      ctx.globalAlpha = 1 - state.mix;
+      ctx.beginPath();
+      line(surf, 1, 1, true);
+      line(boundary, 1.7, -1, false);
+      ctx.closePath();
+      ctx.fillStyle = colors.milk;
+      ctx.fill();
+      ctx.restore();
+
+      ctx.save();
+      ctx.globalAlpha = state.mix;
+      ctx.beginPath();
+      line(surf, 1, 1, true);
+      ctx.lineTo(x1, m.bottom + 20);
+      ctx.lineTo(x0, m.bottom + 20);
+      ctx.closePath();
+      ctx.fillStyle = colors.mixed;
+      ctx.fill();
+      ctx.restore();
+
+      if (state.mix < 0.92) {
+        ctx.save();
+        ctx.globalAlpha = (1 - state.mix) * 0.55;
+        ctx.beginPath();
+        line(boundary, 1.7, 1, true);
+        ctx.strokeStyle = colors.tea;
+        ctx.lineWidth = 1.6;
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      const sheen = ctx.createLinearGradient(0, surf - 10, 0, m.bottom);
+      sheen.addColorStop(0, "rgba(255,255,255,0.2)");
+      sheen.addColorStop(0.35, "rgba(255,255,255,0)");
+      sheen.addColorStop(1, "rgba(70,32,12,0.16)");
+      ctx.fillStyle = sheen;
+      ctx.fillRect(m.cx - m.topW, surf - 20, m.topW * 2, m.bottom - surf + 30);
+    }
+
+    function drawStreaks(m) {
+      if (!state.streaks.length || state.mix > 0.98) return;
+      ctx.save();
+      ctx.lineCap = "round";
+      ctx.globalAlpha = 1 - state.mix;
+      state.streaks.forEach(function (s) {
+        const y0 = m.top + (m.bottom - m.top) * s.t0;
+        const y1 = y0 + (m.bottom - m.top) * s.len * 0.72;
+        const xAt = function (y, extra) {
+          return m.cx + s.side * (innerHalf(m, y) - 2) + extra;
+        };
+        ctx.strokeStyle = "rgba(62, 32, 16, 0.82)";
+        ctx.lineWidth = s.w;
+        ctx.beginPath();
+        ctx.moveTo(xAt(y0, 0), y0);
+        ctx.quadraticCurveTo(xAt((y0 + y1) / 2, s.bend), (y0 + y1) / 2, xAt(y1, s.bend * 0.3), y1);
+        ctx.stroke();
+        ctx.fillStyle = "rgba(62, 32, 16, 0.82)";
+        ctx.beginPath();
+        ctx.arc(xAt(y1, s.bend * 0.3), y1, s.w * 0.85, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.restore();
+    }
+
+    function drawBubbles() {
+      ctx.save();
+      ctx.strokeStyle = "rgba(255,255,255,0.55)";
+      ctx.lineWidth = 1;
+      state.bubbles.forEach(function (b) {
+        ctx.globalAlpha = Math.max(0, b.life) * 0.7;
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+        ctx.stroke();
+      });
+      ctx.restore();
+    }
+
+    function drawFoam(m, color) {
+      const amp = reduced() ? 1 : 2.4 + state.energy * 10;
+      const base = liquidTop(m) + 4;
+      ctx.save();
+      traceCup(ctx, m, 5);
+      ctx.clip();
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      const steps = 16;
+      const xs = [];
+      for (let i = 0; i <= steps; i++) {
+        const yGuess = base - 18;
+        const half = Math.max(12, innerHalf(m, yGuess) - 4);
+        const x = m.cx - half + (half * 2) * (i / steps);
+        xs.push(x);
+        const y = waveY(base, x, amp, m) - 20 - Math.sin(i * 0.85 + state.phase) * 2;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.lineTo(xs[xs.length - 1], base + 18);
+      ctx.lineTo(xs[0], base + 18);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = mixHex(color, "#FFFFFF", 0.35);
+      for (let i = 1; i < xs.length - 1; i += 3) {
+        const x = xs[i];
+        ctx.beginPath();
+        ctx.ellipse(x, waveY(base, x, amp, m) - 20, 11, 7, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function drawLid(m) {
+      const y = m.top + 2;
+      const rx = m.topW / 2 + 4;
+      ctx.beginPath();
+      ctx.ellipse(m.cx, y, rx, 12, 0, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(255,255,255,0.5)";
+      ctx.fill();
+      ctx.strokeStyle = "rgba(70,46,32,0.38)";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.ellipse(m.cx, y - 8, rx * 0.58, 16, 0, Math.PI, 0);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.ellipse(m.cx + rx * 0.28, y - 10, 7, 4.5, 0.3, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(70,46,32,0.15)";
+      ctx.fill();
+      ctx.stroke();
+    }
+
+    function drawRim(m) {
+      ctx.beginPath();
+      ctx.ellipse(m.cx, m.top + 3, m.topW / 2, 11, 0, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(255,255,255,0.25)";
+      ctx.fill();
+      ctx.strokeStyle = "rgba(70,46,32,0.4)";
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
+    }
+
+    function drawStraw(m) {
+      const open = flavor().foam;
+      const x1 = m.cx + m.topW * 0.22;
+      const y1 = m.top - (open ? 78 : 62);
+      const x2 = m.cx - m.topW * 0.06;
+      const y2 = m.bottom - m.cupH * 0.28;
+      ctx.save();
+      ctx.lineCap = "round";
+      ctx.strokeStyle = "#3A241C";
+      ctx.lineWidth = 13;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+      ctx.strokeStyle = "rgba(255,236,214,0.8)";
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(x1 - 3, y1);
+      ctx.lineTo(x2 - 3, y2);
+      ctx.stroke();
+      ctx.restore();
+      ctx.save();
+      traceCup(ctx, m, 10);
+      ctx.clip();
+      ctx.strokeStyle = mixHex(palette().mixed, "#3A241C", 0.25);
+      ctx.globalAlpha = 0.28;
+      ctx.lineWidth = 14;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawSeal(m) {
+      const y = (m.top + m.bottom) / 2 + m.cupH * 0.06;
+      ctx.save();
+      ctx.translate(m.cx, y);
+      ctx.rotate(-0.12);
+      ctx.beginPath();
+      ctx.arc(0, 0, 16, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(255, 246, 236, 0.88)";
+      ctx.fill();
+      ctx.lineWidth = 1.4;
+      ctx.strokeStyle = "rgba(196, 80, 42, 0.9)";
+      ctx.stroke();
+      ctx.fillStyle = "#C4502A";
+      ctx.font = "700 15px " + SANS;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("摇", 0, 1);
+      ctx.restore();
+    }
+
+    function drawDrops(m) {
+      ctx.fillStyle = "rgba(255,255,255,0.55)";
+      state.drops.forEach(function (d) {
+        const y = m.top + (m.bottom - m.top) * d.t;
+        const x = m.cx + d.side * (outerHalf(m, y) + 2) + d.xoff;
+        ctx.beginPath();
+        ctx.ellipse(x, y, 2.1, d.len / 2, 0, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+
+    function drawSplashes(colors) {
+      state.splashes.forEach(function (drop) {
+        ctx.beginPath();
+        ctx.fillStyle = colors.milk;
+        ctx.globalAlpha = Math.max(0, drop.life) * 0.85;
+        ctx.arc(drop.x, drop.y, drop.r, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.globalAlpha = 1;
+    }
+
+    function draw() {
+      const dpr = state.dpr || 1;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const m = metrics();
+      if (m.w < 20 || m.cupH < 40) return;
+      const colors = palette();
+
+      const tableY = m.bottom + m.cupH * 0.08;
+      ctx.fillStyle = "#f0e2d2";
+      ctx.fillRect(0, tableY, m.w, m.h - tableY);
+      ctx.fillStyle = "rgba(90, 50, 30, 0.1)";
+      ctx.fillRect(0, tableY, m.w, 1);
+
+      ctx.save();
+      ctx.translate(m.cx + Math.sin(state.tilt) * 26, m.bottom + 14);
+      ctx.scale(1, 0.28);
+      ctx.beginPath();
+      ctx.arc(0, 0, m.botW * 0.58, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(92, 52, 28, 0.15)";
+      ctx.fill();
+      ctx.restore();
+
+      ctx.save();
+      ctx.translate(m.cx, m.bottom - 6);
+      ctx.rotate(state.tilt);
+      ctx.translate(-m.cx, -(m.bottom - 6));
+
+      traceCup(ctx, m, 0);
+      ctx.fillStyle = "rgba(255,252,248,0.28)";
+      ctx.fill();
+
+      ctx.save();
+      traceCup(ctx, m, 8);
+      ctx.clip();
+      drawLiquid(m, colors);
+      drawStreaks(m);
+      drawBubbles();
+      state.particles.forEach(drawBit);
+      ctx.restore();
+
+      traceCup(ctx, m, 0);
+      ctx.strokeStyle = "rgba(80, 52, 36, 0.28)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.save();
+      ctx.strokeStyle = "rgba(255,255,255,0.7)";
+      ctx.lineWidth = 4;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(m.cx - m.topW / 2 + 18, m.top + m.cupH * 0.16);
+      ctx.quadraticCurveTo(
+        m.cx - m.botW / 2 + 8,
+        (m.top + m.bottom) / 2,
+        m.cx - m.botW / 2 + 18,
+        m.bottom - 30
+      );
+      ctx.stroke();
+      ctx.restore();
+
+      drawDrops(m);
+      if (flavor().foam) {
+        drawFoam(m, colors.foam);
+        drawRim(m);
+      } else {
+        drawLid(m);
+      }
+      drawStraw(m);
+      drawSeal(m);
+      drawSplashes(colors);
+      ctx.restore();
+    }
+
+    function frame(now) {
+      const dt = Math.min(34, now - lastFrame);
+      lastFrame = now;
+      resize();
+      step(dt);
+      draw();
+      renderUI();
+      requestAnimationFrame(frame);
+    }
+
+    document.getElementById("shake").addEventListener("click", function () {
+      enableMotion();
+      kick(1, true);
+      state.shakeUntil = performance.now() + 680;
+    });
+
+    document.getElementById("new-cup").addEventListener("click", newCup);
+
+    soundBtn.addEventListener("click", function () {
+      state.audioOn = !state.audioOn;
+      soundBtn.textContent = state.audioOn ? "声音开" : "声音关";
+      soundBtn.setAttribute("aria-pressed", state.audioOn ? "true" : "false");
+      if (state.audioOn) getAudio();
+    });
+
+    document.querySelectorAll("[data-flavor]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        setFlavor(Number(btn.getAttribute("data-flavor")));
+      });
+    });
+
+    document.querySelectorAll("[data-sugar]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        state.sugar = Number(btn.getAttribute("data-sugar"));
+        setPressed("[data-sugar]", "data-sugar", state.sugar);
+        renderUI();
+      });
+    });
+
+    document.querySelectorAll("[data-ice]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        state.ice = Number(btn.getAttribute("data-ice"));
+        setPressed("[data-ice]", "data-ice", state.ice);
+        addIce();
+        renderUI();
+      });
+    });
+
+    canvas.addEventListener("pointerdown", function (e) {
+      dragging = true;
+      canvas.setPointerCapture(e.pointerId);
+      lastX = e.clientX;
+      lastY = e.clientY;
+      lastT = performance.now();
+      enableMotion();
+    });
+
+    canvas.addEventListener("pointermove", function (e) {
+      if (!dragging) return;
+      const now = performance.now();
+      const dt = Math.max(8, now - lastT);
+      const speed = Math.hypot(e.clientX - lastX, e.clientY - lastY) / dt;
+      lastX = e.clientX;
+      lastY = e.clientY;
+      lastT = now;
+      const rect = canvas.getBoundingClientRect();
+      const offset = (e.clientX - rect.left - rect.width / 2) / (rect.width / 2);
+      dragTilt = clamp(offset, -1, 1) * 0.3;
+      if (speed > 0.65 && now - state.lastKick > 70) {
+        state.lastKick = now;
+        kick(clamp((speed - 0.65) * 0.42, 0.08, 0.6), true);
+      }
+    });
+
+    function endDrag() {
+      dragging = false;
+      dragTilt = null;
+    }
+
+    canvas.addEventListener("pointerup", endDrag);
+    canvas.addEventListener("pointercancel", endDrag);
+
+    window.addEventListener("keydown", function (e) {
+      if (e.repeat) return;
+      if (e.code === "Space") {
+        e.preventDefault();
+        kick(1, true);
+        state.shakeUntil = performance.now() + 680;
+      } else if (e.key >= "1" && e.key <= "6") {
+        setFlavor(Number(e.key) - 1);
+      }
+    });
+
+    let lastMag = null;
+    window.addEventListener("devicemotion", function (e) {
+      const a = e.accelerationIncludingGravity;
+      if (!a || a.x == null) return;
+      const mag = Math.hypot(a.x, a.y, a.z);
+      if (lastMag != null) {
+        const delta = Math.abs(mag - lastMag);
+        const now = performance.now();
+        if (delta > 6 && now - state.lastKick > 120) {
+          state.lastKick = now;
+          kick(clamp(delta / 14, 0.2, 0.9), true);
+          state.shakeUntil = now + 420;
+        }
+      }
+      lastMag = mag;
+    });
+
+    if (window.matchMedia("(pointer: fine)").matches) {
+      hintEl.textContent = "按住杯子左右甩，空格键也行。数字键 1–6 换口味。";
+    }
+
+    state.drops = makeDrops();
+    state.streaks = [];
+    renderUI();
+    requestAnimationFrame(frame);
+  </script>
+</body>
+</html>
